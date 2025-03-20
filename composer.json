@@ -1,0 +1,20 @@
+{
+    "name": "takeshi/composer-linker",
+    "type": "composer-plugin",
+    "license": "MIT",
+    "autoload": {
+        "psr-4": {
+            "TakeshiYu\\Linker\\": "src/"
+        }
+    },
+    "authors": [
+        {
+            "name": "Takeshi Yu",
+            "email": "hey@takeshiyu.me"
+        }
+    ],
+    "minimum-stability": "dev",
+    "require": {
+        "composer-plugin-api": "^2.0"
+    }
+}
