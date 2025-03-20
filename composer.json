@@ -1,5 +1,5 @@
 {
-    "name": "takeshi/composer-linker",
+    "name": "takeshiyu/composer-linker",
     "type": "composer-plugin",
     "license": "MIT",
     "autoload": {
