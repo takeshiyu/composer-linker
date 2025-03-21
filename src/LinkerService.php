@@ -201,6 +201,54 @@ class LinkerService
     }
 
     /**
+     * Unlink a package from the current project.
+     *
+     * @param  string  $packageName  Package name
+     * @return array Result information
+     */
+    public function unlink($packageName)
+    {
+        $localLinkFile = $this->localLinksDir.'/'.$this->sanitizeFilename($packageName);
+
+        if (! $this->filesystem->exists($localLinkFile)) {
+            return [
+                'success' => false,
+                'message' => "Package '$packageName' is not linked in this project.",
+            ];
+        }
+
+        $packagePath = trim(file_get_contents($localLinkFile));
+        $packageDir = 'vendor/'.$packageName;
+
+        if (! $this->filesystem->exists($packageDir)) {
+            // Clean up the link file even if package doesn't exist
+            $this->filesystem->remove($localLinkFile);
+
+            return [
+                'success' => false,
+                'message' => "Package directory '$packageDir' does not exist.",
+            ];
+        }
+
+        // Remove symbolic link
+        $this->filesystem->remove($packageDir);
+
+        // Restore backup if it exists
+        if ($this->filesystem->exists($packageDir.'.bak')) {
+            $this->filesystem->rename($packageDir.'.bak', $packageDir);
+        }
+
+        // Remove link file
+        $this->filesystem->remove($localLinkFile);
+
+        return [
+            'success' => true,
+            'message' => "Package '$packageName' has been unlinked and restored to the installed version.",
+            'package' => $packageName,
+        ];
+    }
+
+    /**
      * Sanitize a package name for use as a filename.
      *
      * @param  string  $packageName  Package name
