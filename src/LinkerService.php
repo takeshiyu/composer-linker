@@ -249,6 +249,63 @@ class LinkerService
     }
 
     /**
+     * List all linked packages in the current project.
+     *
+     * @return array List of linked packages
+     */
+    public function getLinkedPackages()
+    {
+        if (! $this->filesystem->exists($this->localLinksDir)) {
+            return [];
+        }
+
+        $links = [];
+        $files = glob($this->localLinksDir.'/*');
+
+        foreach ($files as $file) {
+            $packageName = basename($file);
+            $packagePath = trim(file_get_contents($file));
+
+            $links[$packageName] = [
+                'name' => $packageName,
+                'path' => $packagePath,
+                'exists' => $this->filesystem->exists($packagePath),
+            ];
+        }
+
+        return $links;
+    }
+
+    /**
+     * List all globally registered packages.
+     *
+     * @return array List of registered packages
+     */
+    public function getRegisteredPackages()
+    {
+        if (! $this->filesystem->exists($this->globalLinksDir)) {
+            return [];
+        }
+
+        $packages = [];
+        $files = glob($this->globalLinksDir.'/*.json');
+
+        foreach ($files as $file) {
+            $linkInfo = json_decode(file_get_contents($file), true);
+            $packageName = $linkInfo['name'];
+
+            $packages[$packageName] = [
+                'name' => $packageName,
+                'path' => $linkInfo['path'],
+                'time' => $linkInfo['time'],
+                'exists' => $this->filesystem->exists($linkInfo['path']),
+            ];
+        }
+
+        return $packages;
+    }
+
+    /**
      * Sanitize a package name for use as a filename.
      *
      * @param  string  $packageName  Package name
