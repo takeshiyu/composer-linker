@@ -156,11 +156,17 @@ class LinkerService
 
         // Backup existing package if it exists
         if ($this->filesystem->exists($packageDir)) {
-            // Rename instead of removing to preserve any modifications
-            if ($this->filesystem->exists($packageDir.'.bak')) {
-                $this->filesystem->remove($packageDir.'.bak');
+            // Check if it's already a symbolic link
+            if (is_link($packageDir)) {
+                // If it's already a symbolic link, just remove it
+                $this->filesystem->remove($packageDir);
+            } else {
+                // Only backup when it's not a symbolic link
+                if ($this->filesystem->exists($packageDir.'.bak')) {
+                    $this->filesystem->remove($packageDir.'.bak');
+                }
+                $this->filesystem->rename($packageDir, $packageDir.'.bak');
             }
-            $this->filesystem->rename($packageDir, $packageDir.'.bak');
         }
 
         try {
