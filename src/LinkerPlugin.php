@@ -8,12 +8,20 @@ use Composer\Composer;
 use Composer\IO\IOInterface;
 use Composer\Plugin\Capable;
 use Composer\Plugin\PluginInterface;
+use Symfony\Component\Filesystem\Exception\IOExceptionInterface;
+use Symfony\Component\Filesystem\Filesystem;
 
 class LinkerPlugin implements Capable, PluginInterface
 {
-    protected Composer $composer;
+    /**
+     * @var Composer
+     */
+    protected $composer;
 
-    protected IOInterface $io;
+    /**
+     * @var IOInterface
+     */
+    protected $io;
 
     /**
      * Apply plugin modifications to Composer
@@ -37,7 +45,32 @@ class LinkerPlugin implements Capable, PluginInterface
      */
     public function uninstall(Composer $composer, IOInterface $io)
     {
-        // Nothing to do here
+        // Clean up global links directory if needed
+        $linkerService = new LinkerService;
+        $globalLinksDir = $linkerService->getGlobalLinksDir();
+
+        if (is_dir($globalLinksDir)) {
+            $answer = $io->askConfirmation(
+                'Do you want to remove all composer-linker global registry data? [y/N] ',
+                false
+            );
+
+            if ($answer) {
+                $io->write("<info>Removing composer-linker global registry at {$globalLinksDir}</info>");
+
+                // Use Symfony Filesystem to safely remove the directory
+                $fs = new Filesystem;
+                try {
+                    $fs->remove($globalLinksDir);
+                    $io->write('<info>Global registry has been removed.</info>');
+                } catch (IOExceptionInterface $e) {
+                    $io->writeError('<error>Failed to remove directory: '.$e->getMessage().'</error>');
+                }
+            } else {
+                $io->write('<info>Preserving composer-linker global registry. You can manually remove it at:</info>');
+                $io->write("<comment>{$globalLinksDir}</comment>");
+            }
+        }
     }
 
     /**

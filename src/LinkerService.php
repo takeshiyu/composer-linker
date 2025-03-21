@@ -22,7 +22,12 @@ class LinkerService
     /**
      * @var string
      */
-    protected $localLinksDir = '.composer-links';
+    protected $linksFile;
+
+    /**
+     * @var array
+     */
+    protected $linksData = [];
 
     /**
      * LinkerService constructor.
@@ -31,11 +36,15 @@ class LinkerService
     {
         $this->filesystem = new Filesystem;
         $this->globalLinksDir = $this->getGlobalLinksDir();
+        $this->linksFile = $this->globalLinksDir.'/links.json';
 
         // Create global links directory if it doesn't exist
         if (! $this->filesystem->exists($this->globalLinksDir)) {
             $this->filesystem->mkdir($this->globalLinksDir, 0755);
         }
+
+        // Load existing links data
+        $this->loadLinksData();
     }
 
     /**
@@ -57,6 +66,32 @@ class LinkerService
         }
 
         return $home.'/.composer/links';
+    }
+
+    /**
+     * Load links data from the JSON file
+     */
+    protected function loadLinksData()
+    {
+        if ($this->filesystem->exists($this->linksFile)) {
+            $content = file_get_contents($this->linksFile);
+            $data = json_decode($content, true);
+
+            if (is_array($data)) {
+                $this->linksData = $data;
+            }
+        }
+    }
+
+    /**
+     * Save links data to the JSON file
+     */
+    protected function saveLinksData()
+    {
+        file_put_contents(
+            $this->linksFile,
+            json_encode($this->linksData, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES)
+        );
     }
 
     /**
@@ -89,24 +124,20 @@ class LinkerService
 
         $packageName = $composerJson['name'];
 
+        // Initialize registered_packages if not exists
+        if (! isset($this->linksData['registered_packages'])) {
+            $this->linksData['registered_packages'] = [];
+        }
+
         // Store package information
-        $linkInfo = [
+        $this->linksData['registered_packages'][$packageName] = [
             'path' => $packagePath,
-            'name' => $packageName,
             'autoload' => $composerJson['autoload'] ?? [],
             'time' => time(),
         ];
 
-        // Create global links directory if it doesn't exist
-        if (! $this->filesystem->exists($this->globalLinksDir)) {
-            $this->filesystem->mkdir($this->globalLinksDir, 0755);
-        }
-
-        // Save link information
-        file_put_contents(
-            $this->globalLinksDir.'/'.$this->sanitizeFilename($packageName).'.json',
-            json_encode($linkInfo, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES)
-        );
+        // Save to the central links file
+        $this->saveLinksData();
 
         return [
             'success' => true,
@@ -124,22 +155,21 @@ class LinkerService
      */
     public function link($packageName)
     {
-        $linkFile = $this->globalLinksDir.'/'.$this->sanitizeFilename($packageName).'.json';
-
-        if (! $this->filesystem->exists($linkFile)) {
+        // Check if package is registered
+        if (! isset($this->linksData['registered_packages'][$packageName])) {
             return [
                 'success' => false,
                 'message' => "Package '$packageName' is not registered. Run 'composer link' in the package directory first.",
             ];
         }
 
-        $linkInfo = json_decode(file_get_contents($linkFile), true);
-        $packagePath = $linkInfo['path'];
+        $packageInfo = $this->linksData['registered_packages'][$packageName];
+        $packagePath = $packageInfo['path'];
 
         if (! $this->filesystem->exists($packagePath)) {
             return [
                 'success' => false,
-                'message' => "The package directory '{$linkInfo['path']}' no longer exists.",
+                'message' => "The package directory '$packagePath' no longer exists.",
             ];
         }
 
@@ -173,16 +203,21 @@ class LinkerService
             // Create symbolic link
             $this->filesystem->symlink($packagePath, $packageDir);
 
-            // Create local links directory if needed
-            if (! $this->filesystem->exists($this->localLinksDir)) {
-                $this->filesystem->mkdir($this->localLinksDir, 0755);
+            // Save link information to global links file
+            $currentProject = realpath(getcwd());
+
+            if (! isset($this->linksData['projects'])) {
+                $this->linksData['projects'] = [];
             }
 
-            // Save local link information
-            file_put_contents(
-                $this->localLinksDir.'/'.$this->sanitizeFilename($packageName),
-                $packagePath
-            );
+            if (! isset($this->linksData['projects'][$currentProject])) {
+                $this->linksData['projects'][$currentProject] = [
+                    'linked_packages' => [],
+                ];
+            }
+
+            $this->linksData['projects'][$currentProject]['linked_packages'][$packageName] = $packagePath;
+            $this->saveLinksData();
 
             return [
                 'success' => true,
@@ -214,21 +249,25 @@ class LinkerService
      */
     public function unlink($packageName)
     {
-        $localLinkFile = $this->localLinksDir.'/'.$this->sanitizeFilename($packageName);
+        $currentProject = realpath(getcwd());
 
-        if (! $this->filesystem->exists($localLinkFile)) {
+        // Check if the package is linked in this project
+        $isLinked = isset($this->linksData['projects'][$currentProject]['linked_packages'][$packageName]);
+
+        if (! $isLinked) {
             return [
                 'success' => false,
                 'message' => "Package '$packageName' is not linked in this project.",
             ];
         }
 
-        $packagePath = trim(file_get_contents($localLinkFile));
+        $packagePath = $this->linksData['projects'][$currentProject]['linked_packages'][$packageName];
         $packageDir = 'vendor/'.$packageName;
 
         if (! $this->filesystem->exists($packageDir)) {
-            // Clean up the link file even if package doesn't exist
-            $this->filesystem->remove($localLinkFile);
+            // Clean up the link record even if package doesn't exist
+            unset($this->linksData['projects'][$currentProject]['linked_packages'][$packageName]);
+            $this->saveLinksData();
 
             return [
                 'success' => false,
@@ -244,8 +283,15 @@ class LinkerService
             $this->filesystem->rename($packageDir.'.bak', $packageDir);
         }
 
-        // Remove link file
-        $this->filesystem->remove($localLinkFile);
+        // Remove link record
+        unset($this->linksData['projects'][$currentProject]['linked_packages'][$packageName]);
+
+        // Clean up empty project entries
+        if (empty($this->linksData['projects'][$currentProject]['linked_packages'])) {
+            unset($this->linksData['projects'][$currentProject]);
+        }
+
+        $this->saveLinksData();
 
         return [
             'success' => true,
@@ -261,17 +307,16 @@ class LinkerService
      */
     public function getLinkedPackages()
     {
-        if (! $this->filesystem->exists($this->localLinksDir)) {
+        $currentProject = realpath(getcwd());
+
+        if (! isset($this->linksData['projects'][$currentProject]['linked_packages'])) {
             return [];
         }
 
         $links = [];
-        $files = glob($this->localLinksDir.'/*');
+        $linkedPackages = $this->linksData['projects'][$currentProject]['linked_packages'];
 
-        foreach ($files as $file) {
-            $packageName = basename($file);
-            $packagePath = trim(file_get_contents($file));
-
+        foreach ($linkedPackages as $packageName => $packagePath) {
             $links[$packageName] = [
                 'name' => $packageName,
                 'path' => $packagePath,
@@ -289,22 +334,17 @@ class LinkerService
      */
     public function getRegisteredPackages()
     {
-        if (! $this->filesystem->exists($this->globalLinksDir)) {
+        if (! isset($this->linksData['registered_packages'])) {
             return [];
         }
 
         $packages = [];
-        $files = glob($this->globalLinksDir.'/*.json');
-
-        foreach ($files as $file) {
-            $linkInfo = json_decode(file_get_contents($file), true);
-            $packageName = $linkInfo['name'];
-
+        foreach ($this->linksData['registered_packages'] as $packageName => $packageInfo) {
             $packages[$packageName] = [
                 'name' => $packageName,
-                'path' => $linkInfo['path'],
-                'time' => $linkInfo['time'],
-                'exists' => $this->filesystem->exists($linkInfo['path']),
+                'path' => $packageInfo['path'],
+                'time' => $packageInfo['time'],
+                'exists' => $this->filesystem->exists($packageInfo['path']),
             ];
         }
 
@@ -312,13 +352,12 @@ class LinkerService
     }
 
     /**
-     * Sanitize a package name for use as a filename.
+     * List all projects that have linked packages.
      *
-     * @param  string  $packageName  Package name
-     * @return string Sanitized filename
+     * @return array List of projects with their linked packages
      */
-    protected function sanitizeFilename($packageName)
+    public function getProjectsWithLinks()
     {
-        return str_replace('/', '--', $packageName);
+        return $this->linksData['projects'] ?? [];
     }
 }
