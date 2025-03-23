@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace TakeshiYu\Linker;
+namespace TakeshiYu\Composer\Linker;
 
 use Symfony\Component\Filesystem\Exception\IOExceptionInterface;
 use Symfony\Component\Filesystem\Filesystem;

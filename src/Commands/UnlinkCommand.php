@@ -2,13 +2,13 @@
 
 declare(strict_types=1);
 
-namespace TakeshiYu\Linker\Commands;
+namespace TakeshiYu\Composer\Linker\Commands;
 
 use Composer\Command\BaseCommand;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
-use TakeshiYu\Linker\LinkerService;
+use TakeshiYu\Composer\Linker\LinkerService;
 
 class UnlinkCommand extends BaseCommand
 {

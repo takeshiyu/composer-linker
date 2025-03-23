@@ -2,16 +2,18 @@
 
 declare(strict_types=1);
 
-namespace TakeshiYu\Linker;
+namespace TakeshiYu\Composer\Linker;
 
 use Composer\Composer;
 use Composer\IO\IOInterface;
+use Composer\Plugin\Capability\CommandProvider;
 use Composer\Plugin\Capable;
 use Composer\Plugin\PluginInterface;
 use Symfony\Component\Filesystem\Exception\IOExceptionInterface;
 use Symfony\Component\Filesystem\Filesystem;
+use TakeshiYu\Composer\Linker\CommandProvider as LinkerCommandProvider;
 
-class LinkerPlugin implements Capable, PluginInterface
+class Plugin implements Capable, PluginInterface
 {
     /**
      * @var Composer
@@ -81,7 +83,7 @@ class LinkerPlugin implements Capable, PluginInterface
     public function getCapabilities()
     {
         return [
-            'Composer\Plugin\Capability\CommandProvider' => 'TakeshiYu\Linker\CommandProvider',
+            CommandProvider::class => LinkerCommandProvider::class,
         ];
     }
 }

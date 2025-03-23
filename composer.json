@@ -1,12 +1,12 @@
 {
     "version": "0.1.0",
-    "name": "takeshiyu/linker",
+    "name": "takeshiyu/composer-linker",
     "description": "A Composer plugin for linking local packages during development, similar to `npm link`.",
     "type": "composer-plugin",
     "license": "MIT",
     "autoload": {
         "psr-4": {
-            "TakeshiYu\\Linker\\": "src/"
+            "TakeshiYu\\Composer\\Linker\\": "src/"
         }
     },
     "authors": [
@@ -23,7 +23,7 @@
         "laravel/pint": "^1.21"
     },
     "extra": {
-        "class": "TakeshiYu\\Linker\\LinkerPlugin"
+        "class": "TakeshiYu\\Composer\\Linker\\Plugin"
     },
     "prefer-stable": true,
     "scripts": {
