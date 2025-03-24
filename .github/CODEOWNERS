@@ -1,0 +1,8 @@
+* @takeshiyu
+
+/src/ @takeshiyu
+
+/tests/ @takeshiyu
+
+*.md @takeshiyu
+/docs/ @takeshiyu
