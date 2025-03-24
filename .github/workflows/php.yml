@@ -15,7 +15,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        php-versions: ['8.1', '8.2', '8.3', '8.4']
+        php-versions: ['8.0', '8.1', '8.2', '8.3', '8.4']
     name: PHP ${{ matrix.php-versions }} Test
 
     steps:
@@ -25,9 +25,18 @@ jobs:
       uses: shivammathur/setup-php@v2
       with:
         php-version: ${{ matrix.php-versions }}
-        extensions: mbstring, intl
+        extensions: json, dom, curl, libxml, mbstring
         coverage: xdebug
         tools: composer:v2
+
+    - name: Install Pint
+      run: composer global require laravel/pint
+
+    - name: Run Pint
+      run: pint
+
+    - name: Commit linted files
+      uses: stefanzweifel/git-auto-commit-action@v5
 
     - name: Validate composer.json and composer.lock
       run: composer validate --strict
