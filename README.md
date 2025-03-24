@@ -18,7 +18,7 @@ A Composer plugin for linking local packages during development, similar to `npm
 ## Installation
 
 ```bash
-composer global require takeshiyu/linker
+composer global require takeshiyu/composer-linker
 ```
 
 ## Usage
