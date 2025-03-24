@@ -6,8 +6,6 @@ A Composer plugin for linking local packages during development, similar to `npm
     <a href="https://github.com/username/composer-linker/actions/workflows/php.yml"><img src="https://github.com/username/composer-linker/actions/workflows/php.yml/badge.svg" alt="Build Status"></a>
 </p>
 
-https://github.com/username/composer-linker/actions/workflows/php.yml
-
 ## Key Features
 
 - **No project files** - All link information is stored in the global Composer directory
