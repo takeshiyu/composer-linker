@@ -2,16 +2,28 @@
 
 declare(strict_types=1);
 
-namespace TakeshiYu\Linker\Commands;
+namespace TakeshiYu\Composer\Linker\Commands;
 
 use Composer\Command\BaseCommand;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
-use TakeshiYu\Linker\LinkerService;
+use Symfony\Component\Filesystem\Filesystem;
+use TakeshiYu\Composer\Linker\LinkerService;
 
 class LinkedCommand extends BaseCommand
 {
+    /**
+     * @var Filesystem
+     */
+    private $filesystem;
+
+    public function __construct()
+    {
+        parent::__construct();
+        $this->filesystem = new Filesystem;
+    }
+
     protected function configure()
     {
         $this
@@ -23,15 +35,20 @@ class LinkedCommand extends BaseCommand
                 InputOption::VALUE_NONE,
                 'Show globally registered packages instead of project-linked packages'
             )
+            ->addOption(
+                'all',
+                'a',
+                InputOption::VALUE_NONE,
+                'Show all projects with their linked packages'
+            )
             ->setHelp(<<<'EOT'
 The <info>linked</info> command shows all packages that are currently linked.
 
     <info>composer linked</info>           Show packages linked in this project
     <info>composer linked --global</info>  Show all globally registered packages
+    <info>composer linked --all</info>     Show all projects with their linked packages
 
-Links are stored in:
-- Project links: <comment>.composer-links/</comment> directory in your project
-- Global links: <comment>~/.composer/links/</comment> directory
+Links are stored in the global Composer configuration directory.
 EOT
             );
     }
@@ -40,6 +57,38 @@ EOT
     {
         $linkerService = new LinkerService;
         $showGlobal = $input->getOption('global');
+        $showAll = $input->getOption('all');
+
+        if ($showAll) {
+            $projects = $linkerService->getProjectsWithLinks();
+
+            if (empty($projects)) {
+                $output->writeln('No linked packages found in any projects.');
+
+                return 0;
+            }
+
+            $output->writeln('<info>All projects with linked packages:</info>');
+
+            foreach ($projects as $projectPath => $projectData) {
+                $output->writeln("\n<comment>Project: $projectPath</comment>");
+                $output->writeln(str_repeat('-', 100));
+                $output->writeln(sprintf('%-30s %-60s %s', 'Package', 'Path', 'Status'));
+                $output->writeln(str_repeat('-', 100));
+
+                foreach ($projectData['linked_packages'] as $packageName => $packagePath) {
+                    $status = $this->filesystem->exists($packagePath) ? '<info>Available</info>' : '<error>Missing</error>';
+                    $output->writeln(sprintf(
+                        '%-30s %-60s %s',
+                        $packageName,
+                        $this->truncatePath($packagePath, 60),
+                        $status
+                    ));
+                }
+            }
+
+            return 0;
+        }
 
         if ($showGlobal) {
             $packages = $linkerService->getRegisteredPackages();
@@ -56,7 +105,7 @@ EOT
             $output->writeln(str_repeat('-', 100));
 
             foreach ($packages as $package) {
-                $status = $package['exists'] ? '<info>Available</info>' : '<e>Missing</e>';
+                $status = $package['exists'] ? '<info>Available</info>' : '<error>Missing</error>';
                 $output->writeln(sprintf(
                     '%-30s %-60s %s',
                     $package['name'],
@@ -79,7 +128,7 @@ EOT
             $output->writeln(str_repeat('-', 100));
 
             foreach ($links as $link) {
-                $status = $link['exists'] ? '<info>Available</info>' : '<e>Missing</e>';
+                $status = $link['exists'] ? '<info>Available</info>' : '<error>Missing</error>';
                 $output->writeln(sprintf(
                     '%-30s %-60s %s',
                     $link['name'],
