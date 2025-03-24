@@ -9,6 +9,11 @@
             "TakeshiYu\\Composer\\Linker\\": "src/"
         }
     },
+    "autoload-dev": {
+        "psr-4": {
+            "Tests\\": "tests/"
+        }
+    },
     "authors": [
         {
             "name": "Takeshi Yu",
@@ -20,13 +25,24 @@
     },
     "require-dev": {
         "composer/composer": "^2.0",
-        "laravel/pint": "^1.21"
+        "laravel/pint": "^1.21",
+        "pestphp/pest": "^3.7",
+        "mockery/mockery": "^1.6"
     },
     "extra": {
         "class": "TakeshiYu\\Composer\\Linker\\Plugin"
     },
     "prefer-stable": true,
     "scripts": {
-        "lint": "pint"
+        "lint": "pint",
+        "test": [
+            "@lint",
+            "pest --profile --colors=always"
+        ]
+    },
+    "config": {
+        "allow-plugins": {
+            "pestphp/pest-plugin": true
+        }
     }
 }
