@@ -1,10 +1,12 @@
 # Composer Linker
 
-A Composer plugin for linking local packages during development, similar to `npm link`.
-
-<p align="center">
+<p>
     <a href="https://github.com/takeshiyu/composer-linker/actions/workflows/php.yml"><img src="https://github.com/takeshiyu/composer-linker/actions/workflows/php.yml/badge.svg" alt="Build Status"></a>
 </p>
+
+---
+
+A Composer plugin for linking local packages during development, similar to `npm link`.
 
 ## Key Features
 
@@ -16,7 +18,7 @@ A Composer plugin for linking local packages during development, similar to `npm
 ## Requirements
 
 * Composer 2.0+
-* PHP 7.2+
+* PHP 8.2+
 * Filesystem that supports symbolic links
 
 ## Installation
