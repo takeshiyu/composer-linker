@@ -4,8 +4,6 @@
     <a href="https://github.com/takeshiyu/composer-linker/actions/workflows/php.yml"><img src="https://github.com/takeshiyu/composer-linker/actions/workflows/php.yml/badge.svg" alt="Build Status"></a>
 </p>
 
----
-
 A Composer plugin for linking local packages during development, similar to `npm link`.
 
 ## Key Features
