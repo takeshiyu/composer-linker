@@ -2,9 +2,9 @@
 
 A Composer plugin for linking local packages during development, similar to `npm link`.
 
-[![PHP Tests](https://github.com/takeshiyu/composer-linker/actions/workflows/php.yml/badge.svg)](https://github.com/takeshiyu/composer-linker/actions/workflows/php.yml)
-
-[![Latest Version](https://img.shields.io/packagist/v/takeshiyu/composer-linker.svg?style=flat-square)](https://packagist.org/packages/takeshiyu/composer-linker)
+<p align="center">
+<a href="https://github.com/takeshiyu/composer-linker/actions"><img src="https://github.com/takeshiyu/composer-linker/workflows/tests/badge.svg" alt="Build Status"></a>
+</p>
 
 ## Key Features
 
